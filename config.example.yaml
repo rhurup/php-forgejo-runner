@@ -1,0 +1,38 @@
+# forgejo-runner config, mounted read-only at /etc/runner-config.yaml.
+# A working host-mode configuration for PHP/Laravel CI.
+
+log:
+  level: info
+
+runner:
+  # Registration identity. Persisted on the per-runner volume, so a container
+  # restart rejoins as the same runner instead of registering a new one.
+  file: /data/.runner
+
+  # One job at a time, per container. Host mode shares the filesystem and the
+  # ports: two parallel jobs would both try `artisan serve` on 8000 and would
+  # fight over the Composer and npm caches. Scale out with more containers,
+  # not with capacity.
+  capacity: 1
+
+  timeout: 3h
+  shutdown_timeout: 3h
+  insecure: false
+  fetch_timeout: 5s
+  fetch_interval: 2s
+
+  # ":host" is the part that matters — it tells Forgejo to run jobs as
+  # processes in this container. Without it the runner expects a Docker daemon,
+  # which these runners deliberately do not have.
+  labels:
+    - "self-hosted:host"
+
+cache:
+  # No workflow uses actions/cache, and upload-artifact goes to Forgejo's own
+  # artifact API. Disabled so the runner does not advertise a cache host.
+  enabled: false
+
+container: {}
+
+host:
+  workdir_parent: /data/workdir

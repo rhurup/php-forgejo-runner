@@ -1,0 +1,59 @@
+# Six single-capacity runners, plus the services CI jobs talk to.
+#
+# Registration: supply a runner registration token from Forgejo the FIRST time
+# a container starts, or pre-create /data/.runner. Once registered the identity
+# lives on the data volume and the token is no longer needed — which is why no
+# token appears below.
+#
+# Capacity is 1 per container by design (see config.example.yaml): in host mode
+# two parallel jobs would collide on ports and on the shared caches. Scale out
+# by adding containers.
+
+x-runner: &runner
+  image: rhuruphansen/php-forgejo-runner:8.4
+  restart: always
+  command: ["daemon", "--config", "/etc/runner-config.yaml"]
+  networks: [ci]
+
+services:
+  runner-1:
+    <<: *runner
+    volumes:
+      - ./config.yaml:/etc/runner-config.yaml:ro
+      - ./cache:/cache
+      - ./data-1:/data
+      # A deploy job can rsync into a mounted web root. Mount it only on the
+      # runners that are supposed to publish — a job runs as root and can read
+      # everything mounted into its container.
+      - /srv/www/example.com/dist:/publish/example.com
+
+  runner-2:
+    <<: *runner
+    volumes:
+      - ./config.yaml:/etc/runner-config.yaml:ro
+      - ./cache:/cache
+      - ./data-2:/data
+
+  # runner-3 … runner-6 are the same as runner-2 with their own data-N volume.
+
+  # Jobs reach these by hostname on the ci network. A job that needs a database
+  # creates its own schema per run and drops it afterwards, so one server is
+  # enough for every runner.
+  mysql:
+    image: mysql:8
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: "change-me"
+    networks:
+      ci:
+        aliases: [mysql]
+
+  mailpit:
+    image: axllent/mailpit
+    restart: always
+    networks:
+      ci:
+        aliases: [mailpit]
+
+networks:
+  ci:
