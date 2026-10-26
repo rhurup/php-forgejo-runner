@@ -12,6 +12,11 @@
 x-runner: &runner
   image: rhuruphansen/php-forgejo-runner:8.4
   restart: always
+  # Required in practice. forgejo-runner becomes PID 1 and does not reap its
+  # grandchildren, so the php and node processes a job leaves behind pile up as
+  # zombies — measured at nearly two days old on a long-running runner. This
+  # puts an init in front of it to reap them.
+  init: true
   command: ["daemon", "--config", "/etc/runner-config.yaml"]
   networks: [ci]
 

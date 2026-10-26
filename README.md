@@ -50,6 +50,14 @@ defaults:
 
 Without that line the caches are silently bypassed and every job re-downloads its dependencies.
 
+### Set `init: true`
+
+`forgejo-runner` becomes PID 1 in the container and does not reap its grandchildren, so the `php` and
+`node` processes a job leaves behind accumulate as zombies — on a runner left up for days they were
+measured at nearly two days old, alongside stray `esbuild` and `chrome_crashpad` processes. Docker's
+`init: true` (or `--init`) puts a small init in front of the runner to reap them. The process list
+otherwise grows until the container is restarted.
+
 ### Jobs run as root
 
 In host mode the runner process *is* the job environment, so jobs run as root. Two consequences worth knowing:
