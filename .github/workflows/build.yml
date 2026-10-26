@@ -36,6 +36,22 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      # A missing DOCKERHUB_USERNAME used to make every later Docker Hub step
+      # skip silently: the build still pushed to GHCR, the README sync was a
+      # no-op, and all jobs reported success. A publish that published half of
+      # what it should looked exactly like one that worked. Fail here instead.
+      #
+      # Only on this repository — a fork without the secrets should still be
+      # able to build, which is why the steps below degrade rather than fail.
+      - name: Require Docker Hub credentials
+        if: github.event_name != 'pull_request' && github.repository == 'rhurup/php-forgejo-runner'
+        run: |
+          if [ -z "$DOCKERHUB_USERNAME" ]; then
+            echo "::error::DOCKERHUB_USERNAME is not set, so this run would publish to GHCR only and still report success. Set DOCKERHUB_USERNAME and DOCKERHUB_TOKEN as repository secrets."
+            exit 1
+          fi
+          echo "Docker Hub credentials present; will publish php-forgejo-runner."
+
       - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
 
