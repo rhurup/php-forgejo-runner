@@ -17,7 +17,7 @@
 # be 1 per container (see docker-compose.example.yml) because jobs would
 # otherwise collide on port 8000 and on the shared caches.
 
-ARG NODE_VERSION=24
+ARG NODE_VERSION=26
 ARG COMPOSER_VERSION=2
 
 FROM composer:${COMPOSER_VERSION} AS composer
@@ -76,10 +76,14 @@ RUN command -v php >/dev/null || { echo "ERROR: PHP was not installed"; exit 1; 
 COPY --from=composer /usr/bin/composer /usr/local/bin/composer
 COPY --from=node /usr/local/bin/node /usr/local/bin/node
 COPY --from=node /usr/local/lib/node_modules /usr/local/lib/node_modules
-RUN ln -s ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
+# Newer than the npm bundled with Node. Corepack no longer ships with Node.
+# The tmpfs keeps npm's download cache out of the image.
+ARG NPM_VERSION=12
+RUN --mount=type=tmpfs,target=/root/.npm \
+    ln -s ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
  && ln -s ../lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx \
- && ln -s ../lib/node_modules/corepack/dist/corepack.js /usr/local/bin/corepack \
- && node --version && npm --version
+ && npm install -g "npm@${NPM_VERSION}" corepack \
+ && node --version && npm --version && corepack --version
 
 # The runner binary, verified against the checksum Forgejo publishes beside it.
 # A silently corrupted or substituted download would otherwise end up running

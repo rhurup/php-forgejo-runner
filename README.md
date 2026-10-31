@@ -8,6 +8,7 @@ This is not the GitHub runner image renamed. Forgejo's runner is a single Go bin
 - **One job per container.** Host mode means two parallel jobs would collide on port 8000 and on the shared caches. Scale out with more containers, not with `capacity`.
 - **Checksum-verified runner binary.** The build fails rather than installing a download that doesn't match the checksum Forgejo publishes beside it.
 - **PHP security floor.** Pass `PHP_MIN_VERSION` and the build fails rather than publishing an image with an older, vulnerable PHP.
+- **Node 26 and npm 12.** npm 12 blocks dependency install scripts and git or tarball-URL dependencies by default. A package that needs a build step at install, such as a native module, won't get one until you run `npm install-scripts approve` and commit the policy, or build with a different `NPM_VERSION`.
 - Published for `linux/amd64` and `linux/arm64`.
 
 ## Usage
