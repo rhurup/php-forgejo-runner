@@ -112,6 +112,9 @@ jobs:
             RUNNER_VERSION=${{ steps.runner.outputs.version }}
           tags: ${{ steps.tags.outputs.tags }}
           push: ${{ github.event_name != 'pull_request' }}
+          # SBOM and full provenance let Docker Scout analyse the exact packages.
+          sbom: true
+          provenance: mode=max
           pull: true
           cache-from: type=gha,scope=php-${{ matrix.php }}
           cache-to: type=gha,mode=max,scope=php-${{ matrix.php }}
